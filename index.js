@@ -2,6 +2,8 @@ import  express from "express";
 import dotenv from "dotenv";
 import cors from "cors"
 import db from './utilty/db.js';
+import cookieParser from "cookie-parser";
+
 
 //import_all_routes
 
@@ -22,6 +24,7 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
+app.use(cookieParser());
 
 //port = process.env.PORT || 4000;
 

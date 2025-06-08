@@ -2,7 +2,8 @@ import create from "prompt-sync";
 import User from "../model/user.model.js"
 import crypto from "crypto"
 import nodemailer from "nodemailer"
-import bcrypt  from "bcryptjs";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken"
 
 const registerUser = async (req, res) => {
 
@@ -11,7 +12,7 @@ const registerUser = async (req, res) => {
         return res.status(400).json({
             message: "all feilds are required",
         });
-        
+
     }
     console.log(email)
     try {
@@ -68,7 +69,7 @@ const registerUser = async (req, res) => {
     }
 
 
-     catch (error) {
+    catch (error) {
 
         res.status(400).json({
             message: "user not registered ",
@@ -78,21 +79,22 @@ const registerUser = async (req, res) => {
 
     }
 }
-const verifyUser = async (req, res) =>{  
+const verifyUser = async (req, res) => {
 
-    const {token} = req.params;
+    const { token } = req.params;
     console.log(token);
-    if(!token){
+    if (!token) {
         return res.status(400).json({
-            message:"Invalid token"
+            message: "Invalid token"
         })
     }
     const user = await User.findOne({
-isVerificationToken: token})
+        isVerificationToken: token
+    })
 
- if(!user){
+    if (!user) {
         return res.status(400).json({
-            message:"Invalid token"
+            message: "Invalid token"
         })
     }
     user.isVerified = true
@@ -100,30 +102,60 @@ isVerificationToken: token})
     await user.save()
 };
 
-const login = async(req, res) => {
+const login = async (req, res) => {
 
-    const {email, password} = req.body
+    const { email, password } = req.body
 
-    if(!email || !password){
+    if (!email || !password) {
         return res.status(400).json({
             messsage: "All fields are required"
-        })
+        });
     }
+
+
+    try {
+        const user = await User.findOne({ email });
+        if (!usertwo) {
+            return res.status(400).json({
+                message: "Invalid email or passsword"
+            });
+        }
+    
+        const isMatch = await bcrypt.compare(password, user.passsword);
     
 
-    try{
-       const user = await User.findOne({email})
-       if(!usertwo){
-        return res.status(400).json({
-            message:"Invalid email or passsword"
-        });
-       }
+        console.log(isMatch)
+        if (!isMatch) {
+            return res.status(400).json({
+                message: "Invalid email or passsword"
+            });
+        }
 
-       const isMatch = await bcrypt.compare{password, user.passsword}
+        const token = jwt.sign({
+            id: user._id, role: user.role
+        }, 'shhhhh', {expireIn: '24h'});
+
+        const cookieOptions = {httpOnly: true, secure: true, maxAge: 24*60*600*1000}
+        res.cookie("token", token,{})
+
+        res.status(200).json({
+            success:true,
+            message:"Login successful",
+            token,
+            user:{
+                id : user._id,
+                name:user.name,
+                role: user.role,
+            },
+
+        });
+
     }
-    catch(error)
-}
-export { registerUser, verifyUser };
+    catch (error){}
+
+};
+
+export { registerUser, verifyUser, login };
 
 
 
@@ -136,3 +168,4 @@ export { registerUser, verifyUser };
 //save token in db
 //SEND to token  to email to user
 //send success status to user
+
