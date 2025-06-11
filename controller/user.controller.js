@@ -41,27 +41,27 @@ const registerUser = async (req, res) => {
 
         //send email
 
-        const transporter = nodemailer.createTransport({
-            host: process.env.MAILTRAP_HOST,
-            port: Process.env.MAILTRAP_PORT,
-            secure: false, // true for port 465, false for other ports
-            auth: {
-                user: process.env.USERNAME,
-                pass: Process.env.PASSWORD,
-            },
-        });
+        // const transporter = nodemailer.createTransport({
+        //     host: process.env.MAILTRAP_HOST,
+        //     port: Process.env.MAILTRAP_PORT, q 
+        //     secure: false, // true for port 465, false for other ports
+        //     auth: {
+        //         user: process.env.USERNAME,
+        //         pass: Process.env.PASSWORD,
+        //     },
+        // });
 
-        const mailOption = {
+        // const mailOption = {
 
-            from: Process.env.SENDEREMAIL, // sender address
-            to: user.email, // list of receivers
-            subject: "Verify user email",// Subject line
-            text: `please click on the email${process.env.BASE_URL}/api/v1/users/verify/${token}`, // plain text body
-            // html body
-        };
+        //     from: Process.env.SENDEREMAIL, // sender address
+        //     to: user.email, // list of receivers
+        //     subject: "Verify user email",// Subject line
+        //     text: `please click on the email${process.env.BASE_URL}/api/v1/users/verify/${token}`, // plain text body
+        //     // html body
+        // };
 
 
-        await transporter.sendMail(mailOption)
+        //await transporter.sendMail(mailOption)
         res.status(201).json({
             message: "user registered successfully",
             success: true
@@ -115,14 +115,14 @@ const login = async (req, res) => {
 
     try {
         const user = await User.findOne({ email });
-        if (!usertwo) {
+        if (!user) {
             return res.status(400).json({
                 message: "Invalid email or passsword"
             });
         }
-    
-        const isMatch = await bcrypt.compare(password, user.passsword);
-    
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
 
         console.log(isMatch)
         if (!isMatch) {
@@ -133,25 +133,31 @@ const login = async (req, res) => {
 
         const token = jwt.sign({
             id: user._id, role: user.role
-        }, 'shhhhh', {expireIn: '24h'});
+        }, 'shhhhh', { expiresIn: '24h' });
 
-        const cookieOptions = {httpOnly: true, secure: true, maxAge: 24*60*600*1000}
-        res.cookie("token", token,{})
+        const cookieOptions = { httpOnly: true, secure: true, maxAge: 24 * 60 * 600 * 1000 }
+        res.cookie("token", token, cookieOptions)
 
         res.status(200).json({
-            success:true,
-            message:"Login successful",
+            success: true,
+            message: "Login successful",
             token,
-            user:{
-                id : user._id,
-                name:user.name,
+            user: {
+                id: user._id,
+                name: user.name,
                 role: user.role,
             },
 
         });
 
     }
-    catch (error){}
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Login failed",
+            error: error.message,
+        });
+    }
 
 };
 
